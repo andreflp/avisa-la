@@ -1,4 +1,4 @@
-# projeto_integ
+# Projeto Integrador
 
 Equipe: 
 - André Felipe
