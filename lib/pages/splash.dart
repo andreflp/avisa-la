@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:projeto_integ/map.dart';
+import 'package:projeto_integ/auth/rootpage.dart';
+import 'package:projeto_integ/services/auth.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -9,6 +10,9 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  AuthService auth;
+  VoidCallback loginCallback;
+
   @override
   void initState() {
     super.initState();
@@ -16,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
         Duration(seconds: 6),
         () => Navigator.push(context,
                 MaterialPageRoute(builder: (BuildContext context) {
-              return Maps();
+              return RootPage(auth: Auth());
             })));
   }
 

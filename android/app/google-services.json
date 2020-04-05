@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "799932009084",
+    "firebase_url": "https://avisa-la.firebaseio.com",
+    "project_id": "avisa-la",
+    "storage_bucket": "avisa-la.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:799932009084:android:65678ac05f758731b297f9",
+        "android_client_info": {
+          "package_name": "com.avisala"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "799932009084-hu15770v0s1b9t2a3rm3noovv3u6s0v2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQaB3mHYSmfZkcHMz9Bxq9BvEx481_XqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "799932009084-hu15770v0s1b9t2a3rm3noovv3u6s0v2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
