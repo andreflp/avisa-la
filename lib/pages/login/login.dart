@@ -30,7 +30,6 @@ class _LoginState extends State<Login> {
   bool _isLoginForm;
   bool _isLoading;
 
-  AuthStatus authStatus = AuthStatus.NOT_DETERMINED;
   String _userId = "";
   VoidCallback logoutCallback;
 
@@ -41,13 +40,6 @@ class _LoginState extends State<Login> {
     _isLoading = false;
     _isLoginForm = true;
     super.initState();
-    widget.auth.getCurrentUser().then((user) {
-      setState(() {
-        if (user != null) {
-          _userId = user?.uid;
-        }
-      });
-    });
   }
 
   @override
@@ -364,16 +356,13 @@ class _LoginState extends State<Login> {
         if (_isLoginForm) {
           userId = await widget.auth.signIn(_email, _password);
           Navigator.pushNamed(context, '/map',
-              arguments: Maps(userId: _userId, auth: widget.auth));
-          print('Signed in: $userId');
+              arguments: Maps(auth: widget.auth));
         } else {
           userId = await widget.auth.signUp(_name, _email, _password);
           Navigator.pushNamed(context, '/map',
               arguments: Maps(
-                  userId: _userId,
-                  auth: widget.auth,
-                  logoutCallback: widget.logoutCallback));
-          print('Signed up user: $userId');
+                auth: widget.auth,
+              ));
         }
         setState(() {
           _isLoading = false;
