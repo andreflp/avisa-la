@@ -3,6 +3,7 @@ class Place {
   String placeId;
   String mainText;
   String secondaryText;
+  String reference;
 
   Place({this.description, this.placeId, this.mainText, this.secondaryText});
 
