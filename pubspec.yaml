@@ -35,6 +35,10 @@ dependencies:
   edge_alert:
   flutter_google_places:
   google_maps_webservice:
+  geocoder:
+  dio:
+  flutter_typeahead:
+
 
 dev_dependencies:
   flutter_test:
