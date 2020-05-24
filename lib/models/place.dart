@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-
 class Place {
   String description;
   String placeId;
