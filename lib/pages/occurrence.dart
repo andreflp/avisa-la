@@ -1,8 +1,14 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:path/path.dart';
 import 'package:projeto_integ/models/place.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:projeto_integ/utils/utils.dart';
 
 class Occurrence extends StatefulWidget {
   @override
@@ -10,12 +16,14 @@ class Occurrence extends StatefulWidget {
 }
 
 class _OccurrenceState extends State<Occurrence> {
-  static const googleApiKey = "AIzaSyAUMdaC3fs6NfUBgBhwDZEtqnN-D8krvsM";
+  var googleApiKey = DotEnv().env['API_KEY'];
   final GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   final _controller = TextEditingController();
+  final _imageController = TextEditingController();
   var _scaffoldKey = new GlobalKey<ScaffoldState>();
   Place _placeSelect;
   List<Place> _locationList = [];
+  File imageFile;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +48,7 @@ class _OccurrenceState extends State<Occurrence> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         _locationTextField(),
-                        _imageTextField(),
+                        _imageTextField(context),
                         _descriptionTextField(),
                         _saveOccurrenceBtn(context)
                       ],
@@ -54,35 +62,11 @@ class _OccurrenceState extends State<Occurrence> {
   Widget _locationTextField() {
     return TypeAheadField(
       textFieldConfiguration: TextFieldConfiguration(
-        maxLines: 2,
-        keyboardType: TextInputType.text,
-        controller: _controller,
-        autofocus: true,
-        decoration: InputDecoration(
-          counterText: ' ',
-          hintText: 'Digite uma localização',
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.blue, width: 1.5),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.blue, width: 1.5),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.blue, width: 1.5),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.red, width: 1.5),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.red, width: 1.5),
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-        ),
-      ),
+          maxLines: 2,
+          keyboardType: TextInputType.text,
+          controller: _controller,
+          decoration:
+              occurrenceFieldDecoration("Digite uma localização", null)),
       suggestionsCallback: (pattern) async {
         return await this.searchLocations(pattern);
       },
@@ -103,43 +87,25 @@ class _OccurrenceState extends State<Occurrence> {
     );
   }
 
-  Widget _imageTextField() {
+  Widget _imageTextField(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Container(
           alignment: Alignment.centerLeft,
           child: FormBuilderTextField(
+            controller: _imageController,
+            onTap: () {
+              _showOptionsDialog(context);
+            },
             maxLines: 1,
             attribute: "_image",
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(
               color: Colors.black54,
             ),
-            decoration: InputDecoration(
-                counterText: ' ',
-                hintText: 'Adicionar uma imagem',
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue, width: 1.5),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue, width: 1.5),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue, width: 1.5),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.red, width: 1.5),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.red, width: 1.5),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                suffixIcon: Icon(Icons.camera_alt)),
+            decoration: occurrenceFieldDecoration(
+                "Adicione uma imagem", Icons.camera_alt),
             onSaved: (value) => {},
           ),
         ),
@@ -160,30 +126,7 @@ class _OccurrenceState extends State<Occurrence> {
             style: TextStyle(
               color: Colors.black54,
             ),
-            decoration: InputDecoration(
-              counterText: ' ',
-              hintText: 'Digite uma descrição',
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-            ),
+            decoration: occurrenceFieldDecoration("Digite uma descrição", null),
             onSaved: (value) => {},
           ),
         ),
@@ -231,6 +174,8 @@ class _OccurrenceState extends State<Occurrence> {
 
     final predictions = response.data['predictions'];
 
+    print(predictions);
+
     List<Place> _results = [];
 
     for (var i = 0; i < predictions.length; i++) {
@@ -242,97 +187,83 @@ class _OccurrenceState extends State<Occurrence> {
     }
 
     return _results;
-//
-//    setState(() {
-//      _locationList = _results;
-//    });
+  }
+
+  Future _openGallery(BuildContext context) async {
+    var picture = await ImagePicker().getImage(source: ImageSource.gallery);
+
+    setState(() {
+      imageFile = File(picture.path);
+      setState(() {
+        _imageController.text = basename(imageFile.path);
+      });
+    });
+
+    Navigator.of(context).pop();
+  }
+
+  Future _openCamera(BuildContext context) async {
+    var picture = await ImagePicker().getImage(source: ImageSource.camera);
+
+    setState(() {
+      imageFile = File(picture.path);
+      setState(() {
+        _imageController.text = basename(imageFile.path);
+      });
+    });
+
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _showOptionsDialog(BuildContext context) {
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Escolha uma opção:"),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10.0))),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  cameraBtn(context, "Galeria", _openGallery),
+                  cameraBtn(context, "Câmera", _openCamera),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
+  Future uploadImage() async {
+    String fileName = basename(imageFile.path);
+    StorageReference firebaseStorageRef =
+        FirebaseStorage.instance.ref().child(fileName);
+    StorageUploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+    try {
+      StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+      print("Upload feito com sucesso!");
+    } catch (error) {
+      print("Erro ao fazer o upload: $error");
+    }
+  }
+
+  Widget cameraBtn(BuildContext context, String title, Function func) {
+    return SizedBox(
+        width: double.infinity,
+        child: RaisedButton.icon(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+          icon: Icon(
+            title == "Câmera" ? Icons.camera_alt : Icons.photo_library,
+            size: 18.0,
+          ),
+          textColor: Colors.white,
+          color: Colors.blue,
+          label: Text(title),
+          onPressed: () {
+            func(context);
+          },
+        ));
   }
 }
-//
-//class OccurrenceModal {
-//
-//
-//  Widget _saveOccurrenceBtn(BuildContext context) {
-//    return Container(
-//      padding: EdgeInsets.only(top: 10.0, bottom: 10.0),
-//      width: double.infinity,
-//      child: RaisedButton(
-//        elevation: 5.0,
-//        onPressed: () => {},
-//        padding: EdgeInsets.all(15.0),
-//        shape: RoundedRectangleBorder(
-//          borderRadius: BorderRadius.circular(10.0),
-//        ),
-//        color: Colors.blue,
-//        child: Text(
-//          "Salvar",
-//          style: TextStyle(
-//            color: Colors.white,
-//            letterSpacing: 1.0,
-//            fontSize: 15.0,
-//            fontWeight: FontWeight.bold,
-//          ),
-//        ),
-//      ),
-//    );
-//  }
-//
-//  mainBottomSheet(BuildContext context) {
-//    showModalBottomSheet(
-//        shape: RoundedRectangleBorder(
-//            borderRadius: BorderRadius.vertical(
-//                top: Radius.circular(20.0), bottom: Radius.circular(20.0))),
-//        isScrollControlled: true,
-//        context: context,
-//        builder: (BuildContext context) {
-//          return Padding(
-//            padding: MediaQuery.of(context).viewInsets,
-//            child: Container(
-//              child: Wrap(children: <Widget>[
-//                Center(
-//                  child: Padding(
-//                      padding: EdgeInsets.only(top: 15.0),
-//                      child: Column(
-//                        mainAxisAlignment: MainAxisAlignment.center,
-//                        children: <Widget>[
-//                          Row(
-//                              mainAxisAlignment: MainAxisAlignment.center,
-//                              children: <Widget>[
-//                                Text(
-//                                  "Nova Ocorrência",
-//                                  style: TextStyle(
-//                                      color: Colors.blue, fontSize: 18.0),
-//                                ),
-//                                Padding(
-//                                  padding: const EdgeInsets.only(left: 4.0),
-//                                  child:
-//                                      Icon(Icons.warning, color: Colors.blue),
-//                                ),
-//                              ]),
-//                        ],
-//                      )),
-//                ),
-//                FormBuilder(
-//                  child: SingleChildScrollView(
-//                    physics: AlwaysScrollableScrollPhysics(),
-//                    padding: EdgeInsets.symmetric(
-//                      horizontal: 25.0,
-//                      vertical: 30.0,
-//                    ),
-//                    child: Column(
-//                      mainAxisAlignment: MainAxisAlignment.center,
-//                      children: <Widget>[
-//                        _locationTextField(),
-//                        _imageTextField(),
-//                        _descriptionTextField(),
-//                        _saveOccurrenceBtn(context),
-//                      ],
-//                    ),
-//                  ),
-//                ),
-//              ]),
-//            ),
-//          );
-//        });
-//  }
-//}

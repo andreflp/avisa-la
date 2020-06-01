@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:projeto_integ/auth/rootpage.dart';
+
 import 'package:projeto_integ/pages/map.dart';
 import 'package:projeto_integ/services/auth.dart';
 import 'package:projeto_integ/utils/utils.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:edge_alert/edge_alert.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -129,37 +128,7 @@ class _LoginState extends State<Login> {
             style: TextStyle(
               color: Colors.white,
             ),
-            decoration: InputDecoration(
-              counterText: ' ',
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-//              contentPadding:
-//                  EdgeInsets.symmetric(vertical: 18.0, horizontal: 10.0),
-              prefixIcon: Icon(
-                Icons.person,
-                color: Colors.white,
-              ),
-              hintText: 'Digite seu Nome',
-              hintStyle: hintText,
-            ),
+            decoration: loginFieldDecoration("Digite seu nome", Icons.person),
             onSaved: (value) => _name = value.trim(),
           ),
         ),
@@ -180,37 +149,7 @@ class _LoginState extends State<Login> {
             style: TextStyle(
               color: Colors.white,
             ),
-            decoration: InputDecoration(
-              counterText: ' ',
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-//              contentPadding:
-//                  EdgeInsets.symmetric(vertical: 18.0, horizontal: 10.0),
-              prefixIcon: Icon(
-                Icons.email,
-                color: Colors.white,
-              ),
-              hintText: 'Digite seu Email',
-              hintStyle: hintText,
-            ),
+            decoration: loginFieldDecoration("Digite seu e-mail", Icons.email),
             validators: [
               FormBuilderValidators.required(errorText: 'Informe um email'),
               FormBuilderValidators.email(errorText: 'Informe um email válido')
@@ -236,37 +175,7 @@ class _LoginState extends State<Login> {
               color: Colors.white,
             ),
             obscureText: true,
-            decoration: InputDecoration(
-              counterText: ' ',
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.red, width: 1.5),
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              contentPadding:
-                  EdgeInsets.symmetric(vertical: 18.0, horizontal: 10.0),
-              prefixIcon: Icon(
-                Icons.lock,
-                color: Colors.white,
-              ),
-              hintText: 'Digite sua senha',
-              hintStyle: hintText,
-            ),
+            decoration: loginFieldDecoration("Digite sua senha", Icons.lock),
             validators: [
               FormBuilderValidators.required(errorText: 'Informe uma senha'),
               FormBuilderValidators.minLength(6,
