@@ -1,8 +1,8 @@
 class Occurrence {
   String _id;
   String _location;
-  String _lat;
-  String _long;
+  double _lat;
+  double _long;
   String _imageURL;
   String _gravity;
   String _description;
@@ -10,8 +10,8 @@ class Occurrence {
   Occurrence({
     String id,
     String location,
-    String lat,
-    String long,
+    double lat,
+    double long,
     String imageURL,
     String gravity,
     String description,
@@ -25,6 +25,21 @@ class Occurrence {
     _description = description;
   }
 
+  String get id => _id;
+  String get location => _location;
+  double get lat => _lat;
+  double get long => _long;
+  String get imageURL => _imageURL;
+  String get gravity => _gravity;
+  String get description => _description;
+
+  set location(String location) => _location = location;
+  set lat(double lat) => _lat = lat;
+  set long(double long) => _long = long;
+  set imageURL(String imageURL) => _imageURL = imageURL;
+  set gravity(String gravity) => _gravity = gravity;
+  set description(String description) => _description = description;
+
   factory Occurrence.fromJson(Map<String, dynamic> json) => Occurrence(
       id: json["iuid"],
       location: json["location"],
@@ -36,7 +51,6 @@ class Occurrence {
 
   toMap() {
     var map = new Map<String, dynamic>();
-    map["iuid"] = this._id;
     map["location"] = this._location;
     map["lat"] = this._lat;
     map["long"] = this._long;

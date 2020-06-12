@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:projeto_integ/components/sidebar.dart';
+import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/pages/occurrence.dart';
 import 'package:projeto_integ/services/auth.dart';
 
@@ -19,18 +20,20 @@ class Maps extends StatefulWidget {
 }
 
 class MapsState extends State<Maps> {
-  @override
-  void initState() {
-    _getCurrentPosition();
-    SystemChrome.setEnabledSystemUIOverlays([]);
-    super.initState();
-  }
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final homeScaffoldKey = GlobalKey<ScaffoldState>();
+  Future<GoogleMapController> _futureCurrentPosition;
+  Future<String> _futureCamera;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureCurrentPosition = _getCurrentPosition();
+    SystemChrome.setEnabledSystemUIOverlays([]);
+  }
 
   Completer<GoogleMapController> _controller = Completer();
-  static const LatLng _center = const LatLng(45.521563, -122.677433);
+  LatLng _center = LatLng(27.6094844, -48.7502849);
 
   Marker marker;
   Circle circle;
@@ -38,7 +41,7 @@ class MapsState extends State<Maps> {
   MapType _currentMapType = MapType.normal;
   final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
 
-  Future<void> _getCurrentPosition() async {
+  Future<GoogleMapController> _getCurrentPosition() async {
     geolocator
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.best)
         .then((Position position) async {
@@ -51,6 +54,7 @@ class MapsState extends State<Maps> {
       final GoogleMapController controller = await _controller.future;
       LatLng center = LatLng(position.latitude, position.longitude);
       setState(() {
+        _center = LatLng(position.latitude, position.longitude);
         marker = Marker(
           markerId: MarkerId(center.toString()),
           position: center,
@@ -71,7 +75,9 @@ class MapsState extends State<Maps> {
             center: center,
             fillColor: Colors.blue.withAlpha(60));
       });
+
       controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+      return controller;
     });
   }
 
@@ -108,67 +114,82 @@ class MapsState extends State<Maps> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      key: homeScaffoldKey,
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        key: _scaffoldKey,
-        drawer: NavDrawer(widget.auth, context),
-        body: Stack(
-          children: <Widget>[
-            GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(
-                target: _center,
-                zoom: 11.0,
-              ),
-              mapType: _currentMapType,
-              markers: Set.of((marker != null) ? [marker] : []),
-              circles: Set.of((circle != null) ? [circle] : []),
-              // onCameraMove: _onCameraMove,
-            ),
-            Positioned(
-              left: 10,
-              top: 15,
-              child: IconButton(
-                icon: Icon(Icons.menu),
-                iconSize: 30.0,
-                onPressed: () {
-                  _scaffoldKey.currentState.openDrawer();
-                },
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: Column(
-                  children: <Widget>[
-                    SizedBox(
-                      height: 50.0,
-                    ),
-                    button(_onMapTypeButtonPressed, Icons.map, 'btn1'),
-                    SizedBox(
-                      height: 12.0,
-                    ),
-                    button(
-                        _getCurrentPosition, Icons.location_searching, 'btn2'),
-                  ],
+        key: homeScaffoldKey,
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          key: _scaffoldKey,
+          drawer: NavDrawer(widget.auth, context),
+          body: Stack(
+            children: <Widget>[
+              FutureBuilder(
+                  future: _futureCurrentPosition,
+                  builder: (context, snapshot) {
+                    switch (snapshot.connectionState) {
+                      case ConnectionState.none:
+                      case ConnectionState.active:
+                      case ConnectionState.waiting:
+                        return Center(child: CircularProgressIndicator());
+                      case ConnectionState.done:
+                        if (snapshot.hasError)
+                          return Text(
+                              'Erro ao carregar o mapa: ${snapshot.error}');
+                        return GoogleMap(
+                          onMapCreated: _onMapCreated,
+                          myLocationButtonEnabled: true,
+                          initialCameraPosition: CameraPosition(
+                            target: _center,
+                            zoom: 11.0,
+                          ),
+                          mapType: _currentMapType,
+                          markers: Set.of((marker != null) ? [marker] : []),
+                          circles: Set.of((circle != null) ? [circle] : []),
+                          // onCameraMove: _onCameraMove,
+                        );
+                    }
+                    return null;
+                  }),
+              Positioned(
+                left: 10,
+                top: 15,
+                child: IconButton(
+                  icon: Icon(Icons.menu),
+                  iconSize: 30.0,
+                  onPressed: () {
+                    _scaffoldKey.currentState.openDrawer();
+                  },
                 ),
               ),
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => Occurrence()),
-            );
-          },
-          child: Icon(Icons.add),
-        ), //
-      ),
-    );
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: Column(
+                    children: <Widget>[
+                      SizedBox(
+                        height: 50.0,
+                      ),
+                      button(_onMapTypeButtonPressed, Icons.map, 'btn1'),
+                      SizedBox(
+                        height: 12.0,
+                      ),
+                      button(_getCurrentPosition, Icons.location_searching,
+                          'btn2'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                Transition(widget: OccurrencePage()),
+              );
+            },
+            child: Icon(Icons.add),
+          ), //
+        ));
   }
 
   signOut(BuildContext context) async {

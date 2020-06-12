@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:projeto_integ/auth/rootpage.dart';
+import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/services/auth.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,12 +17,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(
-        Duration(seconds: 6),
-        () => Navigator.push(context,
-                MaterialPageRoute(builder: (BuildContext context) {
-              return RootPage();
-            })));
+    Timer(Duration(seconds: 6),
+        () => Navigator.push(context, Transition(widget: RootPage())));
   }
 
   @override

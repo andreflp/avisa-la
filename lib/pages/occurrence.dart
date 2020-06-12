@@ -6,24 +6,38 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:path/path.dart';
+import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/models/place.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:projeto_integ/pages/map.dart';
+import 'package:projeto_integ/services/ocurrence_service.dart';
 import 'package:projeto_integ/utils/utils.dart';
 
-class Occurrence extends StatefulWidget {
+class OccurrencePage extends StatefulWidget {
   @override
-  _OccurrenceState createState() => _OccurrenceState();
+  _OccurrencePageState createState() => _OccurrencePageState();
 }
 
-class _OccurrenceState extends State<Occurrence> {
+class _OccurrencePageState extends State<OccurrencePage> {
   var googleApiKey = DotEnv().env['API_KEY'];
   final GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
-  final _controller = TextEditingController();
+  final _locationController = TextEditingController();
   final _imageController = TextEditingController();
+  final _descriptionController = TextEditingController();
   var _scaffoldKey = new GlobalKey<ScaffoldState>();
-  Place _placeSelect;
-  List<Place> _locationList = [];
+  var urlAutocomplete = DotEnv().env['URL_AUTOCOMPLETE'];
+  var urlDetails = DotEnv().env['URL_DETAILS'];
   File imageFile;
+
+  OccurrenceService occurrenceService = OccurrenceService();
+
+  String _placeId = "";
+  String _location = "";
+  String _gravity = "";
+  String _imageURL = "";
+  double _lat;
+  double _long;
+  String _description = "";
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +56,7 @@ class _OccurrenceState extends State<Occurrence> {
                     physics: AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.symmetric(
                       horizontal: 15.0,
-                      vertical: 70.0,
+                      vertical: 55.0,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -50,6 +64,7 @@ class _OccurrenceState extends State<Occurrence> {
                         _locationTextField(),
                         _imageTextField(context),
                         _descriptionTextField(),
+                        _gravityRadio(),
                         _saveOccurrenceBtn(context)
                       ],
                     ),
@@ -60,30 +75,31 @@ class _OccurrenceState extends State<Occurrence> {
   }
 
   Widget _locationTextField() {
-    return TypeAheadField(
+    return TypeAheadFormField(
       textFieldConfiguration: TextFieldConfiguration(
-          maxLines: 2,
-          keyboardType: TextInputType.text,
-          controller: _controller,
-          decoration:
-              occurrenceFieldDecoration("Digite uma localização", null)),
+        maxLines: 2,
+        keyboardType: TextInputType.text,
+        controller: _locationController,
+        decoration: occurrenceFieldDecoration("Digite uma localização *", null),
+      ),
       suggestionsCallback: (pattern) async {
         return await this.searchLocations(pattern);
       },
       itemBuilder: (context, suggestion) {
         return ListTile(
           leading: Icon(Icons.place),
-          title: Text(suggestion.mainText),
-          subtitle: Text(suggestion.secondaryText),
+          title: Text(suggestion.mainText ?? ""),
+          subtitle: Text(suggestion.secondaryText ?? ""),
         );
       },
       onSuggestionSelected: (suggestion) {
         setState(() {
-          _controller.value =
-              _controller.value.copyWith(text: suggestion.description);
-          _placeSelect = suggestion;
+          _locationController.value =
+              _locationController.value.copyWith(text: suggestion.description);
+          _placeId = suggestion.placeId;
         });
       },
+      onSaved: (value) => _location = value.trim(),
     );
   }
 
@@ -99,14 +115,13 @@ class _OccurrenceState extends State<Occurrence> {
               _showOptionsDialog(context);
             },
             maxLines: 1,
-            attribute: "_image",
             keyboardType: TextInputType.emailAddress,
             style: TextStyle(
               color: Colors.black54,
             ),
             decoration: occurrenceFieldDecoration(
                 "Adicione uma imagem", Icons.camera_alt),
-            onSaved: (value) => {},
+            attribute: null,
           ),
         ),
       ],
@@ -120,6 +135,7 @@ class _OccurrenceState extends State<Occurrence> {
         Container(
           alignment: Alignment.centerLeft,
           child: FormBuilderTextField(
+            controller: _descriptionController,
             maxLines: 3,
             attribute: "_description",
             keyboardType: TextInputType.text,
@@ -127,7 +143,7 @@ class _OccurrenceState extends State<Occurrence> {
               color: Colors.black54,
             ),
             decoration: occurrenceFieldDecoration("Digite uma descrição", null),
-            onSaved: (value) => {},
+            onSaved: (value) => _description = value.trim(),
           ),
         ),
       ],
@@ -140,7 +156,7 @@ class _OccurrenceState extends State<Occurrence> {
       width: double.infinity,
       child: RaisedButton(
         elevation: 5.0,
-        onPressed: () => {},
+        onPressed: () => _validateAndSubmit(context),
         padding: EdgeInsets.all(15.0),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -159,34 +175,109 @@ class _OccurrenceState extends State<Occurrence> {
     );
   }
 
+  Widget _gravityRadio() {
+    return Container(
+        padding: EdgeInsets.only(bottom: 10.0),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                "Gravidade *",
+                style: TextStyle(
+                  fontSize: 15.0,
+                  color: Colors.black54,
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Radio(
+                    value: "Baixa",
+                    groupValue: _gravity,
+                    onChanged: _onGravityChange,
+                  ),
+                  Text(
+                    "Baixa",
+                    style: TextStyle(
+                      fontSize: 15.0,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  Radio(
+                    value: "Média",
+                    groupValue: _gravity,
+                    onChanged: _onGravityChange,
+                  ),
+                  Text(
+                    "Média",
+                    style: TextStyle(
+                      fontSize: 15.0,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  Radio(
+                    value: "Alta",
+                    groupValue: _gravity,
+                    onChanged: _onGravityChange,
+                  ),
+                  Text(
+                    "Alta",
+                    style: TextStyle(
+                      fontSize: 15.0,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ]));
+  }
+
   Future<Iterable<Place>> searchLocations(String text) async {
     if (text.isEmpty) {
       return null;
     }
 
-    String baseURL =
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+    String baseURL = urlAutocomplete;
     String language = 'pt-BR';
 
     String request =
         '$baseURL?input=$text&key=$googleApiKey&language=$language';
-    Response response = await Dio().get(request);
 
-    final predictions = response.data['predictions'];
+    try {
+      Response response = await Dio().get(request);
+      final predictions = response.data['predictions'];
 
-    print(predictions);
+      print(predictions);
 
-    List<Place> _results = [];
+      List<Place> _results = [];
 
-    for (var i = 0; i < predictions.length; i++) {
-      _results.add(Place.fromJson(predictions[i]));
+      for (var i = 0; i < predictions.length; i++) {
+        _results.add(Place.fromJson(predictions[i]));
+      }
+
+      for (Place place in _results) {
+        print(place.description);
+      }
+
+      return _results;
+    } catch (error) {
+      print(error);
     }
+  }
 
-    for (Place place in _results) {
-      print(place.description);
+  Future getLatLongByPlace(String placeId) async {
+    String baseURL = urlDetails;
+    String request = '$baseURL?placeid=$placeId&key=$googleApiKey';
+
+    try {
+      Response response = await Dio().get(request);
+      setState(() {
+        _lat = response.data["result"]["geometry"]["location"]["lat"];
+        _long = response.data["result"]["geometry"]["location"]["lng"];
+      });
+    } catch (error) {
+      print(error);
     }
-
-    return _results;
   }
 
   Future _openGallery(BuildContext context) async {
@@ -236,12 +327,17 @@ class _OccurrenceState extends State<Occurrence> {
   }
 
   Future uploadImage() async {
+    if (imageFile == null) return;
     String fileName = basename(imageFile.path);
     StorageReference firebaseStorageRef =
         FirebaseStorage.instance.ref().child(fileName);
     StorageUploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
     try {
       StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+      String dowurl = await taskSnapshot.ref.getDownloadURL();
+      setState(() {
+        _imageURL = dowurl.toString();
+      });
       print("Upload feito com sucesso!");
     } catch (error) {
       print("Erro ao fazer o upload: $error");
@@ -265,5 +361,77 @@ class _OccurrenceState extends State<Occurrence> {
             func(context);
           },
         ));
+  }
+
+  void _onGravityChange(value) {
+    print(value);
+    setState(() {
+      _gravity = value;
+    });
+  }
+
+  void _validateAndSubmit(BuildContext context) {
+    final form = _formKey.currentState;
+    form.save();
+
+    if (_location.isEmpty && _gravity.isEmpty) {
+      _showDialog("Selecione uma localização e uma gravidade");
+    } else if (_gravity.isEmpty) {
+      _showDialog("Selecione uma gravidade");
+    } else if (_location.isEmpty) {
+      _showDialog("Selecione uma localização");
+    } else {
+      saveOccurrence(context);
+    }
+  }
+
+  void saveOccurrence(BuildContext context) async {
+    await uploadImage();
+    await getLatLongByPlace(_placeId);
+
+    Occurrence model = Occurrence();
+    model.location = _location;
+    model.lat = _lat;
+    model.long = _long;
+    model.imageURL = _imageURL;
+    model.gravity = _gravity;
+    model.description = _description;
+
+    try {
+      occurrenceService.save(model);
+      _formKey.currentState.reset();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => Maps()),
+      );
+    } catch (error) {
+      print(error);
+    }
+  }
+
+  void _showDialog(String msg) {
+    var snackbar = SnackBar(
+      action: SnackBarAction(
+        label: 'Fechar',
+        textColor: Colors.white,
+        onPressed: () {
+          _scaffoldKey.currentState.hideCurrentSnackBar();
+        },
+      ),
+      content: Container(
+        child: Padding(
+          padding: const EdgeInsets.all(14.0),
+          child: Text(
+            msg,
+            style: TextStyle(color: Colors.white, fontSize: 15.0),
+          ),
+        ),
+      ),
+      backgroundColor: Color(0xffdd2c00),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      behavior: SnackBarBehavior.floating,
+    );
+    _scaffoldKey.currentState.showSnackBar(snackbar);
   }
 }
