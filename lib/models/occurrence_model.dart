@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Occurrence {
   String _id;
   String _location;
@@ -40,14 +42,14 @@ class Occurrence {
   set gravity(String gravity) => _gravity = gravity;
   set description(String description) => _description = description;
 
-  factory Occurrence.fromJson(Map<String, dynamic> json) => Occurrence(
-      id: json["iuid"],
-      location: json["location"],
-      lat: json["lat"],
-      long: json["long"],
-      imageURL: json["imageURL"],
-      gravity: json["gravity"],
-      description: json["description"]);
+  factory Occurrence.fromJson(DocumentSnapshot document) => Occurrence(
+      id: document.documentID,
+      location: document.data["location"],
+      lat: document.data["lat"],
+      long: document.data["long"],
+      imageURL: document.data["imageURL"],
+      gravity: document.data["gravity"],
+      description: document.data["description"]);
 
   toMap() {
     var map = new Map<String, dynamic>();

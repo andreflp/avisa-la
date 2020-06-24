@@ -61,6 +61,9 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - images/logo.png
+    - images/icon-high.png
+    - images/icon-regular.png
+    - images/icon-low.png
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

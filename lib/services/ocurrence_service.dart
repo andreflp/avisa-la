@@ -8,17 +8,17 @@ class OccurrenceService {
   static const OCCURRENCE_COLLECTION = "occurrences";
 
   Future<List<Occurrence>> fetchAll() async {
-    List<Occurrence> occurrences;
-    databaseReference
+    List<Occurrence> occurrencies = [];
+    QuerySnapshot snapshot = await databaseReference
         .collection(OCCURRENCE_COLLECTION)
-        .getDocuments()
-        .then((QuerySnapshot snapshot) {
-      snapshot.documents.forEach((occurrence) {
-        occurrences.add(Occurrence.fromJson(occurrence.data));
-      });
-    });
+        .getDocuments();
 
-    return occurrences;
+    for (var i = 0; i < snapshot.documents.length; i++) {
+      DocumentSnapshot document = snapshot.documents[i];
+      occurrencies.add(Occurrence.fromJson(document));
+    }
+
+    return occurrencies;
   }
 
   Future<void> save(Occurrence occurrence) async {

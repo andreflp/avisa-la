@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,8 +7,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:projeto_integ/components/sidebar.dart';
 import 'package:projeto_integ/components/transition.dart';
+import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/pages/occurrence.dart';
 import 'package:projeto_integ/services/auth.dart';
+import 'package:projeto_integ/services/ocurrence_service.dart';
+import 'dart:ui' as ui;
 
 class Maps extends StatefulWidget {
   Maps({this.auth});
@@ -24,22 +28,23 @@ class MapsState extends State<Maps> {
   final homeScaffoldKey = GlobalKey<ScaffoldState>();
   Future<GoogleMapController> _futureCurrentPosition;
   Future<String> _futureCamera;
+  OccurrenceService occurrenceService = OccurrenceService();
+  Completer<GoogleMapController> _controller = Completer();
+  LatLng _center = LatLng(27.6094844, -48.7502849);
+  Marker marker;
+  Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
+  Circle circle;
+  // LatLng _lastMapPosition = _center;
+  MapType _currentMapType = MapType.normal;
+  final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
 
   @override
   void initState() {
     super.initState();
     _futureCurrentPosition = _getCurrentPosition();
+    fetchOccurrences();
     SystemChrome.setEnabledSystemUIOverlays([]);
   }
-
-  Completer<GoogleMapController> _controller = Completer();
-  LatLng _center = LatLng(27.6094844, -48.7502849);
-
-  Marker marker;
-  Circle circle;
-  // LatLng _lastMapPosition = _center;
-  MapType _currentMapType = MapType.normal;
-  final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
 
   Future<GoogleMapController> _getCurrentPosition() async {
     geolocator
@@ -73,7 +78,7 @@ class MapsState extends State<Maps> {
             zIndex: 1,
             strokeColor: Colors.blue,
             center: center,
-            fillColor: Colors.blue.withAlpha(60));
+            fillColor: Colors.blue.withAlpha(20));
       });
 
       controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
@@ -141,7 +146,7 @@ class MapsState extends State<Maps> {
                             zoom: 11.0,
                           ),
                           mapType: _currentMapType,
-                          markers: Set.of((marker != null) ? [marker] : []),
+                          markers: Set.of(_markers.values),
                           circles: Set.of((circle != null) ? [circle] : []),
                           // onCameraMove: _onCameraMove,
                         );
@@ -190,6 +195,46 @@ class MapsState extends State<Maps> {
             child: Icon(Icons.add),
           ), //
         ));
+  }
+
+  static Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+        targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))
+        .buffer
+        .asUint8List();
+  }
+
+  Future<void> fetchOccurrences() async {
+    List<Occurrence> occurrencies = await occurrenceService.fetchAll();
+
+    for (var i = 0; i < occurrencies.length; i++) {
+      var occurrence = occurrencies[i];
+      BitmapDescriptor bmd = await setMarkerIcon(occurrence.gravity);
+
+      final MarkerId markerId = MarkerId(occurrence.id);
+      _markers[markerId] = Marker(
+          markerId: markerId,
+          position: LatLng(occurrence.lat, occurrence.long),
+          icon: bmd);
+    }
+  }
+
+  Future<BitmapDescriptor> setMarkerIcon(gravity) async {
+    String icon;
+
+    if (gravity == "Alta") {
+      icon = 'high';
+    } else if (gravity == "Média") {
+      icon = 'regular';
+    } else {
+      icon = 'low';
+    }
+
+    return await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration(devicePixelRatio: 2.5), 'images/icon-$icon.png');
   }
 
   signOut(BuildContext context) async {
