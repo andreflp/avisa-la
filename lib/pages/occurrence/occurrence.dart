@@ -1,16 +1,17 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:path/path.dart';
+import 'package:projeto_integ/components/dialogs.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/models/place.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:projeto_integ/pages/map.dart';
-import 'package:projeto_integ/services/ocurrence_service.dart';
+import 'package:projeto_integ/services/occurrence_service.dart';
 import 'package:projeto_integ/utils/utils.dart';
 
 class OccurrencePage extends StatefulWidget {
@@ -20,24 +21,30 @@ class OccurrencePage extends StatefulWidget {
 
 class _OccurrencePageState extends State<OccurrencePage> {
   var googleApiKey = DotEnv().env['API_KEY'];
+  var urlAutocomplete = DotEnv().env['URL_AUTOCOMPLETE'];
+  var urlDetails = DotEnv().env['URL_DETAILS'];
+  var _scaffoldKey = new GlobalKey<ScaffoldState>();
   final GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   final _locationController = TextEditingController();
   final _imageController = TextEditingController();
   final _descriptionController = TextEditingController();
-  var _scaffoldKey = new GlobalKey<ScaffoldState>();
-  var urlAutocomplete = DotEnv().env['URL_AUTOCOMPLETE'];
-  var urlDetails = DotEnv().env['URL_DETAILS'];
   File imageFile;
 
   OccurrenceService occurrenceService = OccurrenceService();
+  FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
+  String _userId = "";
   String _placeId = "";
   String _location = "";
-  String _gravity = "";
+  String _severity = "";
   String _imageURL = "";
   double _lat;
   double _long;
   String _description = "";
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<FirebaseUser> user;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +71,7 @@ class _OccurrencePageState extends State<OccurrencePage> {
                         _locationTextField(),
                         _imageTextField(context),
                         _descriptionTextField(),
-                        _gravityRadio(),
+                        _severityRadio(),
                         _saveOccurrenceBtn(context)
                       ],
                     ),
@@ -175,7 +182,7 @@ class _OccurrencePageState extends State<OccurrencePage> {
     );
   }
 
-  Widget _gravityRadio() {
+  Widget _severityRadio() {
     return Container(
         padding: EdgeInsets.only(bottom: 10.0),
         child: Column(
@@ -193,8 +200,8 @@ class _OccurrencePageState extends State<OccurrencePage> {
                 children: <Widget>[
                   Radio(
                     value: "Baixa",
-                    groupValue: _gravity,
-                    onChanged: _onGravityChange,
+                    groupValue: _severity,
+                    onChanged: _onSeverityChange,
                   ),
                   Text(
                     "Baixa",
@@ -205,8 +212,8 @@ class _OccurrencePageState extends State<OccurrencePage> {
                   ),
                   Radio(
                     value: "Média",
-                    groupValue: _gravity,
-                    onChanged: _onGravityChange,
+                    groupValue: _severity,
+                    onChanged: _onSeverityChange,
                   ),
                   Text(
                     "Média",
@@ -217,8 +224,8 @@ class _OccurrencePageState extends State<OccurrencePage> {
                   ),
                   Radio(
                     value: "Alta",
-                    groupValue: _gravity,
-                    onChanged: _onGravityChange,
+                    groupValue: _severity,
+                    onChanged: _onSeverityChange,
                   ),
                   Text(
                     "Alta",
@@ -363,10 +370,10 @@ class _OccurrencePageState extends State<OccurrencePage> {
         ));
   }
 
-  void _onGravityChange(value) {
+  void _onSeverityChange(value) {
     print(value);
     setState(() {
-      _gravity = value;
+      _severity = value;
     });
   }
 
@@ -374,9 +381,9 @@ class _OccurrencePageState extends State<OccurrencePage> {
     final form = _formKey.currentState;
     form.save();
 
-    if (_location.isEmpty && _gravity.isEmpty) {
+    if (_location.isEmpty && _severity.isEmpty) {
       _showDialog("Selecione uma localização e uma gravidade");
-    } else if (_gravity.isEmpty) {
+    } else if (_severity.isEmpty) {
       _showDialog("Selecione uma gravidade");
     } else if (_location.isEmpty) {
       _showDialog("Selecione uma localização");
@@ -388,23 +395,22 @@ class _OccurrencePageState extends State<OccurrencePage> {
   void saveOccurrence(BuildContext context) async {
     await uploadImage();
     await getLatLongByPlace(_placeId);
+    FirebaseUser user = await _auth.currentUser();
 
     Occurrence model = Occurrence();
+    model.userId = user.uid;
     model.location = _location;
     model.lat = _lat;
     model.long = _long;
     model.imageURL = _imageURL;
-    model.gravity = _gravity;
+    model.severity = _severity;
     model.description = _description;
 
     try {
-      occurrenceService.save(model);
+      await occurrenceService.save(model);
       _formKey.currentState.reset();
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Maps()),
-      );
+      showSuccessDialog(context);
     } catch (error) {
       print(error);
     }

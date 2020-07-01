@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:projeto_integ/components/transition.dart';
 
-import 'package:projeto_integ/pages/map.dart';
+import 'package:projeto_integ/pages/map/map.dart';
 import 'package:projeto_integ/services/auth.dart';
 import 'package:projeto_integ/utils/utils.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -264,14 +265,10 @@ class _LoginState extends State<Login> {
       try {
         if (_isLoginForm) {
           userId = await widget.auth.signIn(_email, _password);
-          Navigator.pushNamed(context, '/map',
-              arguments: Maps(auth: widget.auth));
+          Navigator.push(context, Transition(widget: Maps(auth: widget.auth)));
         } else {
           userId = await widget.auth.signUp(_name, _email, _password);
-          Navigator.pushNamed(context, '/map',
-              arguments: Maps(
-                auth: widget.auth,
-              ));
+          Navigator.push(context, Transition(widget: Maps(auth: widget.auth)));
         }
         setState(() {
           _isLoading = false;

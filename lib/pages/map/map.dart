@@ -8,9 +8,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:projeto_integ/components/sidebar.dart';
 import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
-import 'package:projeto_integ/pages/occurrence.dart';
+import 'package:projeto_integ/pages/login/login.dart';
+import 'package:projeto_integ/pages/occurrence/occurrence.dart';
 import 'package:projeto_integ/services/auth.dart';
-import 'package:projeto_integ/services/ocurrence_service.dart';
+import 'package:projeto_integ/services/occurrence_service.dart';
 import 'dart:ui' as ui;
 
 class Maps extends StatefulWidget {
@@ -26,23 +27,24 @@ class Maps extends StatefulWidget {
 class MapsState extends State<Maps> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final homeScaffoldKey = GlobalKey<ScaffoldState>();
-  Future<GoogleMapController> _futureCurrentPosition;
-  Future<String> _futureCamera;
+  final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
   OccurrenceService occurrenceService = OccurrenceService();
   Completer<GoogleMapController> _controller = Completer();
+  Future<GoogleMapController> _futureCurrentPosition;
+  Future<void> _fetchOccurrencies;
+  Future<String> _futureCamera;
   LatLng _center = LatLng(27.6094844, -48.7502849);
   Marker marker;
   Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
   Circle circle;
   // LatLng _lastMapPosition = _center;
   MapType _currentMapType = MapType.normal;
-  final Geolocator geolocator = Geolocator()..forceAndroidLocationManager;
 
   @override
   void initState() {
     super.initState();
     _futureCurrentPosition = _getCurrentPosition();
-    fetchOccurrences();
+    _fetchOccurrencies = fetchOccurrences();
     SystemChrome.setEnabledSystemUIOverlays([]);
   }
 
@@ -60,12 +62,12 @@ class MapsState extends State<Maps> {
       LatLng center = LatLng(position.latitude, position.longitude);
       setState(() {
         _center = LatLng(position.latitude, position.longitude);
-        marker = Marker(
+        MarkerId markerId = MarkerId('currentPosition');
+        _markers[markerId] = Marker(
           markerId: MarkerId(center.toString()),
           position: center,
           infoWindow: InfoWindow(
-            title: 'Você esta aqui!',
-            snippet: 'Você esta aqui!',
+            title: 'Você esta aqui',
           ),
           rotation: position.heading,
           draggable: false,
@@ -75,10 +77,10 @@ class MapsState extends State<Maps> {
         circle = Circle(
             circleId: CircleId("position"),
             radius: position.accuracy,
-            zIndex: 1,
+            zIndex: 5,
             strokeColor: Colors.blue,
             center: center,
-            fillColor: Colors.blue.withAlpha(20));
+            fillColor: Colors.blue.withAlpha(60));
       });
 
       controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
@@ -127,20 +129,23 @@ class MapsState extends State<Maps> {
           body: Stack(
             children: <Widget>[
               FutureBuilder(
-                  future: _futureCurrentPosition,
+                  future: _fetchOccurrencies,
                   builder: (context, snapshot) {
                     switch (snapshot.connectionState) {
                       case ConnectionState.none:
                       case ConnectionState.active:
                       case ConnectionState.waiting:
-                        return Center(child: CircularProgressIndicator());
+                        return MaterialApp(
+                          home: Scaffold(
+                            body: Center(child: CircularProgressIndicator()),
+                            backgroundColor: Colors.white,
+                          ),
+                        );
                       case ConnectionState.done:
-                        if (snapshot.hasError)
-                          return Text(
-                              'Erro ao carregar o mapa: ${snapshot.error}');
                         return GoogleMap(
                           onMapCreated: _onMapCreated,
                           myLocationButtonEnabled: true,
+
                           initialCameraPosition: CameraPosition(
                             target: _center,
                             zoom: 11.0,
@@ -212,22 +217,26 @@ class MapsState extends State<Maps> {
 
     for (var i = 0; i < occurrencies.length; i++) {
       var occurrence = occurrencies[i];
-      BitmapDescriptor bmd = await setMarkerIcon(occurrence.gravity);
+      BitmapDescriptor bmd = await setMarkerIcon(occurrence.severity);
 
       final MarkerId markerId = MarkerId(occurrence.id);
       _markers[markerId] = Marker(
           markerId: markerId,
+          infoWindow: InfoWindow(
+            title: makeEllipsis(occurrence.location),
+            snippet: makeEllipsis(occurrence.description),
+          ),
           position: LatLng(occurrence.lat, occurrence.long),
           icon: bmd);
     }
   }
 
-  Future<BitmapDescriptor> setMarkerIcon(gravity) async {
+  Future<BitmapDescriptor> setMarkerIcon(severity) async {
     String icon;
 
-    if (gravity == "Alta") {
+    if (severity == "Alta") {
       icon = 'high';
-    } else if (gravity == "Média") {
+    } else if (severity == "Média") {
       icon = 'regular';
     } else {
       icon = 'low';
@@ -237,10 +246,18 @@ class MapsState extends State<Maps> {
         ImageConfiguration(devicePixelRatio: 2.5), 'images/icon-$icon.png');
   }
 
+  String makeEllipsis(String text) {
+    if (text.length < 30) {
+      return text;
+    } else {
+      return "${text.substring(0, 30)}...";
+    }
+  }
+
   signOut(BuildContext context) async {
     try {
       await widget.auth.signOut();
-      Navigator.pushNamed(context, '/login');
+      Navigator.push(context, Transition(widget: Login()));
     } catch (e) {
       print(e);
     }

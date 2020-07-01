@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:projeto_integ/pages/login/login.dart';
-import 'package:projeto_integ/pages/map.dart';
+import 'package:projeto_integ/pages/map/map.dart';
 import 'package:projeto_integ/services/auth.dart';
 
 class RootPage extends StatelessWidget {

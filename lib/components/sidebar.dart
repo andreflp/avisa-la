@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projeto_integ/components/transition.dart';
+import 'package:projeto_integ/models/user.dart';
+import 'package:projeto_integ/pages/collaboration/collaboration.dart';
+import 'package:projeto_integ/pages/user.dart';
 import 'package:projeto_integ/services/auth.dart';
 
 class NavDrawer extends StatefulWidget {
@@ -19,24 +23,26 @@ class NavDrawerState extends State<NavDrawer> {
   String name = "";
   String email = "";
   String firstChar = "";
+  String photoURL = "";
+  User userModel;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Firestore _db = Firestore.instance;
 
   getCurrentUser() async {
     FirebaseUser user = await _auth.currentUser();
-    print(user.uid);
 
     await _db
         .collection('users')
         .document(user.uid)
         .get()
-        .then((DocumentSnapshot payload) {
+        .then((DocumentSnapshot document) {
       setState(() {
-        name = payload.data["name"];
-        email = payload.data["email"];
-        firstChar = payload.data["name"][0];
-        print(firstChar);
+        name = document.data["name"];
+        email = document.data["email"];
+        firstChar = document.data["name"][0];
+        photoURL = document.data["photoURL"];
+        userModel = User.fromJson(document);
       });
     });
   }
@@ -59,24 +65,34 @@ class NavDrawerState extends State<NavDrawer> {
             accountName: Text(name),
             accountEmail: Text(email),
             currentAccountPicture: CircleAvatar(
-              backgroundColor: Theme.of(context).platform == TargetPlatform.iOS
-                  ? Colors.blue
-                  : Colors.white,
-              child: Text(
-                firstChar,
-                style: TextStyle(fontSize: 40.0),
-              ),
+              backgroundImage: NetworkImage(photoURL),
+              child: photoURL.isEmpty
+                  ? Text(
+                      firstChar,
+                      style: TextStyle(fontSize: 40.0),
+                    )
+                  : Text(""),
             ),
           ),
           ListTile(
             leading: Icon(Icons.account_circle),
             title: Text('Meus Dados'),
-            onTap: () => {},
+            onTap: () => {
+              Navigator.push(
+                  context,
+                  Transition(
+                      widget: UserPage(
+                    userID: userModel.id,
+                  )))
+            },
           ),
           ListTile(
             leading: Icon(Icons.check),
             title: Text('Colaborações'),
-            onTap: () => {Navigator.of(context).pop()},
+            onTap: () => {
+              Navigator.push(
+                  context, Transition(widget: Collaboration(userModel.id)))
+            },
           ),
           ListTile(
             leading: Icon(Icons.exit_to_app),
