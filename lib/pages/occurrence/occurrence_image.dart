@@ -11,13 +11,18 @@ class OccurrenceImagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: Text(occurrence.location)),
-        backgroundColor: Colors.black,
-        body: Center(
-          child: FadeInImage.memoryNetwork(
-            placeholder: kTransparentImage,
-            image: occurrence.imageURL,
-            fit: BoxFit.cover,
-          ),
+        body: Stack(
+          children: <Widget>[
+            Positioned.fill(
+                child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  fit: BoxFit.cover,
+                  image: NetworkImage(occurrence.imageURL),
+                ),
+              ),
+            )),
+          ],
         ));
   }
 }

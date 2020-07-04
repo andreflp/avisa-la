@@ -108,7 +108,8 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
         maxLines: 2,
         keyboardType: TextInputType.text,
         controller: _locationController,
-        decoration: occurrenceFieldDecoration("Digite uma localização *", null),
+        decoration: occurrenceFieldDecoration(
+            "Digite uma localização *", null, "Local"),
       ),
       suggestionsCallback: (pattern) async {
         return await this.searchLocations(pattern);
@@ -152,7 +153,7 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
               color: Colors.black54,
             ),
             decoration: occurrenceFieldDecoration(
-                "Adicione uma imagem", Icons.fullscreen),
+                "Adicione uma imagem", Icons.fullscreen, "Imagem"),
             attribute: null,
           ),
         ),
@@ -174,7 +175,8 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
             style: TextStyle(
               color: Colors.black54,
             ),
-            decoration: occurrenceFieldDecoration("Digite uma descrição", null),
+            decoration: occurrenceFieldDecoration(
+                "Digite uma descrição", null, "Descrição"),
             onSaved: (value) => _description = value.trim(),
           ),
         ),

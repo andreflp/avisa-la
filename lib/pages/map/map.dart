@@ -10,6 +10,7 @@ import 'package:projeto_integ/components/sidebar.dart';
 import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/pages/login/login.dart';
+import 'package:projeto_integ/pages/occurrence/occcurrence-infos.dart';
 import 'package:projeto_integ/pages/occurrence/occurrence.dart';
 import 'package:projeto_integ/pages/occurrence/occurrence_image.dart';
 import 'package:projeto_integ/services/auth.dart';
@@ -139,6 +140,8 @@ class MapsState extends State<Maps> {
                           return GoogleMap(
                             onMapCreated: _onMapCreated,
                             myLocationButtonEnabled: false,
+                            compassEnabled: false,
+                            mapToolbarEnabled: false,
                             myLocationEnabled: true,
                             initialCameraPosition: CameraPosition(
                               target: _center,
@@ -225,7 +228,7 @@ class MapsState extends State<Maps> {
             onTap: () => {
               Navigator.push(
                 context,
-                Transition(widget: OccurrenceImagePage(occurrence)),
+                Transition(widget: OccurrenceInfoPage(occurrence)),
               )
             },
             title: makeEllipsis(occurrence.location),

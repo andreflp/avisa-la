@@ -114,7 +114,8 @@ class _UserPageState extends State<UserPage> {
             style: TextStyle(
               color: Colors.black54,
             ),
-            decoration: occurrenceFieldDecoration("Digite seu nome", null),
+            decoration:
+                occurrenceFieldDecoration("Digite seu nome", null, "Nome"),
             onSaved: (value) => _name = value.trim(),
           ),
         ),
@@ -137,7 +138,8 @@ class _UserPageState extends State<UserPage> {
             style: TextStyle(
               color: Colors.black54,
             ),
-            decoration: occurrenceFieldDecoration("Digite um e-mail", null),
+            decoration:
+                occurrenceFieldDecoration("Digite um e-mail", null, "E-mail"),
             onSaved: (value) => _email = value.trim(),
           ),
         ),

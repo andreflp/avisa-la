@@ -16,10 +16,11 @@ final boxDecoration = BoxDecoration(
   ],
 );
 
-occurrenceFieldDecoration(String hintText, IconData icon) {
+occurrenceFieldDecoration(String hintText, IconData icon, String labelText) {
   return InputDecoration(
       counterText: ' ',
       hintText: hintText,
+      labelText: labelText,
       border: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.blue, width: 1.5),
         borderRadius: BorderRadius.circular(10.0),
