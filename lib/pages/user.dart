@@ -4,14 +4,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:path/path.dart';
 import 'package:projeto_integ/components/dialogs.dart';
-import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/user.dart';
-import 'package:projeto_integ/pages/map/map.dart';
 import 'package:projeto_integ/services/user_service.dart';
 import 'package:projeto_integ/utils/utils.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 
 class UserPage extends StatefulWidget {
   UserPage({this.userID});
@@ -37,6 +35,7 @@ class _UserPageState extends State<UserPage> {
   String _name = "";
   String _email = "";
   String _photoURL = "";
+  bool _loading = false;
   File imageFile;
 
   @override
@@ -67,31 +66,34 @@ class _UserPageState extends State<UserPage> {
                 appBar: AppBar(
                   title: Text("Meus dados"),
                 ),
-                body: Center(
-                  child: Stack(
-                    children: <Widget>[
-                      Container(
-                          height: double.infinity,
-                          child: FormBuilder(
-                            key: _formKey,
-                            child: SingleChildScrollView(
-                              physics: AlwaysScrollableScrollPhysics(),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 15.0, vertical: 55.0),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  _userPhoto(context),
-                                  _nameTextField(),
-                                  _emailTextField(),
-                                  _saveUserBtn(context),
-                                ],
-                              ),
-                            ),
-                          ))
-                    ],
-                  ),
-                ),
+                body: LoadingOverlay(
+                    color: Colors.grey,
+                    child: Center(
+                      child: Stack(
+                        children: <Widget>[
+                          Container(
+                              height: double.infinity,
+                              child: FormBuilder(
+                                key: _formKey,
+                                child: SingleChildScrollView(
+                                  physics: AlwaysScrollableScrollPhysics(),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 15.0, vertical: 55.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      _userPhoto(context),
+                                      _nameTextField(),
+                                      _emailTextField(),
+                                      _saveUserBtn(context),
+                                    ],
+                                  ),
+                                ),
+                              ))
+                        ],
+                      ),
+                    ),
+                    isLoading: _loading),
               );
           }
           return null;
@@ -199,6 +201,9 @@ class _UserPageState extends State<UserPage> {
 
   void saveUserInfo(BuildContext context) async {
     try {
+      setState(() {
+        _loading = true;
+      });
       User model = User();
       model.id = _user.id;
       model.name = _name;
@@ -210,7 +215,14 @@ class _UserPageState extends State<UserPage> {
       _formKey.currentState.reset();
 
       showSuccessDialog(context);
+
+      setState(() {
+        _loading = false;
+      });
     } catch (error) {
+      setState(() {
+        _loading = false;
+      });
       print(error);
     }
   }

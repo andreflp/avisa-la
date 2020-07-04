@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:projeto_integ/components/sidebar.dart';
 import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/pages/login/login.dart';
 import 'package:projeto_integ/pages/occurrence/occurrence.dart';
+import 'package:projeto_integ/pages/occurrence/occurrence_image.dart';
 import 'package:projeto_integ/services/auth.dart';
 import 'package:projeto_integ/services/occurrence_service.dart';
 import 'dart:ui' as ui;
@@ -32,23 +34,27 @@ class MapsState extends State<Maps> {
   Completer<GoogleMapController> _controller = Completer();
   Future<GoogleMapController> _futureCurrentPosition;
   Future<void> _fetchOccurrencies;
-  Future<String> _futureCamera;
   LatLng _center = LatLng(27.6094844, -48.7502849);
   Marker marker;
   Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
-  Circle circle;
   // LatLng _lastMapPosition = _center;
   MapType _currentMapType = MapType.normal;
+  BitmapDescriptor iconCurrentLocation;
+  bool loading = false;
 
   @override
   void initState() {
     super.initState();
+    setCurrentLocationIcon();
     _futureCurrentPosition = _getCurrentPosition();
     _fetchOccurrencies = fetchOccurrences();
     SystemChrome.setEnabledSystemUIOverlays([]);
   }
 
   Future<GoogleMapController> _getCurrentPosition() async {
+    setState(() {
+      loading = true;
+    });
     geolocator
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.best)
         .then((Position position) async {
@@ -56,34 +62,14 @@ class MapsState extends State<Maps> {
         bearing: 0,
         target: LatLng(position.latitude, position.longitude),
         tilt: 10,
-        zoom: 17.0,
+        zoom: 15.0,
       );
       final GoogleMapController controller = await _controller.future;
-      LatLng center = LatLng(position.latitude, position.longitude);
-      setState(() {
-        _center = LatLng(position.latitude, position.longitude);
-        MarkerId markerId = MarkerId('currentPosition');
-        _markers[markerId] = Marker(
-          markerId: MarkerId(center.toString()),
-          position: center,
-          infoWindow: InfoWindow(
-            title: 'Você esta aqui',
-          ),
-          rotation: position.heading,
-          draggable: false,
-          flat: true,
-          icon: BitmapDescriptor.defaultMarker,
-        );
-        circle = Circle(
-            circleId: CircleId("position"),
-            radius: position.accuracy,
-            zIndex: 5,
-            strokeColor: Colors.blue,
-            center: center,
-            fillColor: Colors.blue.withAlpha(60));
-      });
 
       controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+      setState(() {
+        loading = false;
+      });
       return controller;
     });
   }
@@ -118,6 +104,12 @@ class MapsState extends State<Maps> {
     );
   }
 
+  void setCurrentLocationIcon() async {
+    iconCurrentLocation = await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration(devicePixelRatio: 2.5),
+        'images/current-position.png');
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -126,70 +118,74 @@ class MapsState extends State<Maps> {
         home: Scaffold(
           key: _scaffoldKey,
           drawer: NavDrawer(widget.auth, context),
-          body: Stack(
-            children: <Widget>[
-              FutureBuilder(
-                  future: _fetchOccurrencies,
-                  builder: (context, snapshot) {
-                    switch (snapshot.connectionState) {
-                      case ConnectionState.none:
-                      case ConnectionState.active:
-                      case ConnectionState.waiting:
-                        return MaterialApp(
-                          home: Scaffold(
-                            body: Center(child: CircularProgressIndicator()),
-                            backgroundColor: Colors.white,
-                          ),
-                        );
-                      case ConnectionState.done:
-                        return GoogleMap(
-                          onMapCreated: _onMapCreated,
-                          myLocationButtonEnabled: true,
-
-                          initialCameraPosition: CameraPosition(
-                            target: _center,
-                            zoom: 11.0,
-                          ),
-                          mapType: _currentMapType,
-                          markers: Set.of(_markers.values),
-                          circles: Set.of((circle != null) ? [circle] : []),
-                          // onCameraMove: _onCameraMove,
-                        );
-                    }
-                    return null;
-                  }),
-              Positioned(
-                left: 10,
-                top: 15,
-                child: IconButton(
-                  icon: Icon(Icons.menu),
-                  iconSize: 30.0,
-                  onPressed: () {
-                    _scaffoldKey.currentState.openDrawer();
-                  },
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Align(
-                  alignment: Alignment.bottomRight,
-                  child: Column(
-                    children: <Widget>[
-                      SizedBox(
-                        height: 50.0,
-                      ),
-                      button(_onMapTypeButtonPressed, Icons.map, 'btn1'),
-                      SizedBox(
-                        height: 12.0,
-                      ),
-                      button(_getCurrentPosition, Icons.location_searching,
-                          'btn2'),
-                    ],
+          body: LoadingOverlay(
+            color: Colors.grey,
+            child: Stack(
+              children: <Widget>[
+                FutureBuilder(
+                    future: _fetchOccurrencies,
+                    builder: (context, snapshot) {
+                      switch (snapshot.connectionState) {
+                        case ConnectionState.none:
+                        case ConnectionState.active:
+                        case ConnectionState.waiting:
+                          return MaterialApp(
+                            home: Scaffold(
+                              body: Center(child: CircularProgressIndicator()),
+                              backgroundColor: Colors.white,
+                            ),
+                          );
+                        case ConnectionState.done:
+                          return GoogleMap(
+                            onMapCreated: _onMapCreated,
+                            myLocationButtonEnabled: false,
+                            myLocationEnabled: true,
+                            initialCameraPosition: CameraPosition(
+                              target: _center,
+                              zoom: 11.0,
+                            ),
+                            mapType: _currentMapType,
+                            markers: Set.of(_markers.values),
+                            // onCameraMove: _onCameraMove,
+                          );
+                      }
+                      return null;
+                    }),
+                Positioned(
+                  left: 10,
+                  top: 15,
+                  child: IconButton(
+                    icon: Icon(Icons.menu),
+                    iconSize: 30.0,
+                    onPressed: () {
+                      _scaffoldKey.currentState.openDrawer();
+                    },
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Align(
+                    alignment: Alignment.bottomRight,
+                    child: Column(
+                      children: <Widget>[
+                        SizedBox(
+                          height: 50.0,
+                        ),
+                        button(_onMapTypeButtonPressed, Icons.map, 'btn1'),
+                        SizedBox(
+                          height: 12.0,
+                        ),
+                        button(_getCurrentPosition, Icons.location_searching,
+                            'btn2'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            isLoading: loading,
           ),
+
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               Navigator.push(
@@ -213,6 +209,9 @@ class MapsState extends State<Maps> {
   }
 
   Future<void> fetchOccurrences() async {
+    setState(() {
+      loading = true;
+    });
     List<Occurrence> occurrencies = await occurrenceService.fetchAll();
 
     for (var i = 0; i < occurrencies.length; i++) {
@@ -223,12 +222,22 @@ class MapsState extends State<Maps> {
       _markers[markerId] = Marker(
           markerId: markerId,
           infoWindow: InfoWindow(
+            onTap: () => {
+              Navigator.push(
+                context,
+                Transition(widget: OccurrenceImagePage(occurrence)),
+              )
+            },
             title: makeEllipsis(occurrence.location),
             snippet: makeEllipsis(occurrence.description),
           ),
           position: LatLng(occurrence.lat, occurrence.long),
           icon: bmd);
     }
+
+    setState(() {
+      loading = false;
+    });
   }
 
   Future<BitmapDescriptor> setMarkerIcon(severity) async {
@@ -251,15 +260,6 @@ class MapsState extends State<Maps> {
       return text;
     } else {
       return "${text.substring(0, 30)}...";
-    }
-  }
-
-  signOut(BuildContext context) async {
-    try {
-      await widget.auth.signOut();
-      Navigator.push(context, Transition(widget: Login()));
-    } catch (e) {
-      print(e);
     }
   }
 }

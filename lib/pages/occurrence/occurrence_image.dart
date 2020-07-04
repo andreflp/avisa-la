@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class OccurrenceImagePage extends StatelessWidget {
   OccurrenceImagePage(this.occurrence);
@@ -10,10 +11,12 @@ class OccurrenceImagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: Text(occurrence.location)),
-        body: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-                image: NetworkImage(occurrence.imageURL), fit: BoxFit.cover),
+        backgroundColor: Colors.black,
+        body: Center(
+          child: FadeInImage.memoryNetwork(
+            placeholder: kTransparentImage,
+            image: occurrence.imageURL,
+            fit: BoxFit.cover,
           ),
         ));
   }

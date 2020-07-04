@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:loading_overlay/loading_overlay.dart';
+import 'package:projeto_integ/components/dialogs.dart';
 import 'package:projeto_integ/components/transition.dart';
 
 import 'package:projeto_integ/pages/map/map.dart';
@@ -28,7 +30,7 @@ class _LoginState extends State<Login> {
   String _errorMessage;
 
   bool _isLoginForm;
-  bool _isLoading;
+  bool _loading;
 
   String _userId = "";
   VoidCallback logoutCallback;
@@ -37,7 +39,7 @@ class _LoginState extends State<Login> {
   void initState() {
     super.initState();
     _errorMessage = "";
-    _isLoading = false;
+    _loading = false;
     _isLoginForm = true;
     super.initState();
   }
@@ -45,75 +47,77 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
-        child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: Stack(
-            children: <Widget>[
-              Container(
-                height: double.infinity,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF41A4F1),
-                      Color(0xFF278DE0),
-                      Color(0xFF118AE5),
-                    ],
-                    stops: [0.3, 0.6, 0.8],
-                  ),
+        key: _scaffoldKey,
+        body: LoadingOverlay(
+            color: Colors.grey,
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light,
+              child: GestureDetector(
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: Stack(
+                  children: <Widget>[
+                    Container(
+                      height: double.infinity,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFF41A4F1),
+                            Color(0xFF278DE0),
+                            Color(0xFF118AE5),
+                          ],
+                          stops: [0.3, 0.6, 0.8],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: double.infinity,
+                      child: FormBuilder(
+                        key: _formKey,
+                        child: SingleChildScrollView(
+                          physics: AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 40.0,
+                            vertical: 80.0,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              SizedBox(
+                                height: _isLoginForm ? 150.0 : 100,
+                                child: Image.asset(
+                                  "images/logo.png",
+                                ),
+                              ),
+                              Offstage(
+                                offstage: _isLoginForm,
+                                child: _nameTextField(),
+                              ),
+                              Offstage(
+                                offstage: _isLoginForm,
+                                child: SizedBox(
+                                  height: 14.0,
+                                ),
+                              ),
+                              _emailTextField(),
+                              SizedBox(
+                                height: 5.0,
+                              ),
+                              _passwordTextField(),
+                              _loginBtn(context),
+                              _signUpBtn(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
                 ),
               ),
-              Container(
-                height: double.infinity,
-                child: FormBuilder(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 40.0,
-                      vertical: 80.0,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        SizedBox(
-                          height: _isLoginForm ? 150.0 : 100,
-                          child: Image.asset(
-                            "images/logo.png",
-                          ),
-                        ),
-                        Offstage(
-                          offstage: _isLoginForm,
-                          child: _nameTextField(),
-                        ),
-                        Offstage(
-                          offstage: _isLoginForm,
-                          child: SizedBox(
-                            height: 14.0,
-                          ),
-                        ),
-                        _emailTextField(),
-                        SizedBox(
-                          height: 5.0,
-                        ),
-                        _passwordTextField(),
-                        _loginBtn(context),
-                        _signUpBtn(),
-                      ],
-                    ),
-                  ),
-                ),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+            isLoading: _loading));
   }
 
   Widget _nameTextField() {
@@ -258,7 +262,7 @@ class _LoginState extends State<Login> {
   void validateAndSubmit(BuildContext context) async {
     setState(() {
       _errorMessage = "";
-      _isLoading = true;
+      _loading = true;
     });
     if (validateAndSave()) {
       String userId = "";
@@ -270,23 +274,28 @@ class _LoginState extends State<Login> {
           userId = await widget.auth.signUp(_name, _email, _password);
           Navigator.push(context, Transition(widget: Maps(auth: widget.auth)));
         }
-        setState(() {
-          _isLoading = false;
-        });
 
         if (userId.length > 0 && userId != null && _isLoginForm) {
           widget.loginCallback();
         }
+
+        showSuccessDialog(context);
+
+        setState(() {
+          _loading = false;
+        });
       } catch (e) {
-        print(e.code);
-        if (e.code.toString() == 'ERROR_WRONG_PASSWORD') {
-          _showDialog('Senha incorreta.');
-        } else if (e.code.toString() == 'ERROR_USER_NOT_FOUND') {
-          _showDialog('Usuário não encontrado.');
+        if (e.code != null) {
+          if (e.code.toString() == 'ERROR_WRONG_PASSWORD') {
+            _showDialog('Senha incorreta.');
+          } else if (e.code.toString() == 'ERROR_USER_NOT_FOUND') {
+            _showDialog('Usuário não encontrado.');
+          }
         }
+
         print('Error: $e');
         setState(() {
-          _isLoading = false;
+          _loading = false;
           _errorMessage = e.message;
           _formKey.currentState.reset();
         });

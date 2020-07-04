@@ -40,7 +40,9 @@ dependencies:
   firebase_storage: 3.1.6
   image_picker: 0.6.7
   path:
-  rflutter_alert: ^1.0.3
+  transparent_image: ^1.0.0
+  loading_overlay: 0.2.1
+  flutter_launcher_icons: 0.7.5
 
 
 dev_dependencies:
@@ -65,6 +67,9 @@ flutter:
     - images/icon-high.png
     - images/icon-regular.png
     - images/icon-low.png
+    - images/user-placeholder.png
+    - images/current-position.png
+    - images/occurrence-placeholder.png
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -92,3 +97,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+flutter_icons:
+  ios: true
+  android: true
+  image_path: "images/logo_launcher.png"

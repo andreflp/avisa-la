@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:path/path.dart';
 import 'package:projeto_integ/components/dialogs.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
@@ -41,6 +42,7 @@ class _OccurrencePageState extends State<OccurrencePage> {
   double _lat;
   double _long;
   String _description = "";
+  bool _loading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -49,36 +51,40 @@ class _OccurrencePageState extends State<OccurrencePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        key: _scaffoldKey,
-        appBar: AppBar(
-          title: Text("Nova Ocorrência"),
-        ),
-        body: Center(
-          child: Stack(children: <Widget>[
-            Container(
-                height: double.infinity,
-                child: FormBuilder(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 15.0,
-                      vertical: 55.0,
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text("Nova Ocorrência"),
+      ),
+      body: LoadingOverlay(
+          color: Colors.grey,
+          child: Center(
+            child: Stack(children: <Widget>[
+              Container(
+                  height: double.infinity,
+                  child: FormBuilder(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 15.0,
+                        vertical: 55.0,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          _locationTextField(),
+                          _imageTextField(context),
+                          _descriptionTextField(),
+                          _severityRadio(),
+                          _saveOccurrenceBtn(context)
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        _locationTextField(),
-                        _imageTextField(context),
-                        _descriptionTextField(),
-                        _severityRadio(),
-                        _saveOccurrenceBtn(context)
-                      ],
-                    ),
-                  ),
-                )),
-          ]),
-        ));
+                  )),
+            ]),
+          ),
+          isLoading: _loading),
+    );
   }
 
   Widget _locationTextField() {
@@ -254,16 +260,10 @@ class _OccurrencePageState extends State<OccurrencePage> {
       Response response = await Dio().get(request);
       final predictions = response.data['predictions'];
 
-      print(predictions);
-
       List<Place> _results = [];
 
       for (var i = 0; i < predictions.length; i++) {
         _results.add(Place.fromJson(predictions[i]));
-      }
-
-      for (Place place in _results) {
-        print(place.description);
       }
 
       return _results;
@@ -371,7 +371,6 @@ class _OccurrencePageState extends State<OccurrencePage> {
   }
 
   void _onSeverityChange(value) {
-    print(value);
     setState(() {
       _severity = value;
     });
@@ -393,25 +392,35 @@ class _OccurrencePageState extends State<OccurrencePage> {
   }
 
   void saveOccurrence(BuildContext context) async {
-    await uploadImage();
-    await getLatLongByPlace(_placeId);
-    FirebaseUser user = await _auth.currentUser();
-
-    Occurrence model = Occurrence();
-    model.userId = user.uid;
-    model.location = _location;
-    model.lat = _lat;
-    model.long = _long;
-    model.imageURL = _imageURL;
-    model.severity = _severity;
-    model.description = _description;
-
     try {
+      setState(() {
+        _loading = true;
+      });
+      await uploadImage();
+      await getLatLongByPlace(_placeId);
+      FirebaseUser user = await _auth.currentUser();
+
+      Occurrence model = Occurrence();
+      model.userId = user.uid;
+      model.location = _location;
+      model.lat = _lat;
+      model.long = _long;
+      model.imageURL = _imageURL;
+      model.severity = _severity;
+      model.description = _description;
+
       await occurrenceService.save(model);
       _formKey.currentState.reset();
 
       showSuccessDialog(context);
+
+      setState(() {
+        _loading = false;
+      });
     } catch (error) {
+      setState(() {
+        _loading = false;
+      });
       print(error);
     }
   }

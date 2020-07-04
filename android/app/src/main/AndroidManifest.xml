@@ -10,7 +10,7 @@
 
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="projeto_integ"
+        android:label="Avisa lá"
         android:icon="@mipmap/ic_launcher">
           <meta-data android:name="com.google.android.geo.API_KEY"
                android:value="AIzaSyBaivn7oAlAJctegvbYBrIjz_ghe6ycE7I"/>

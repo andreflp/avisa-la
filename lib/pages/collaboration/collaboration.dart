@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/services/occurrence_service.dart';
 
@@ -18,6 +19,7 @@ class Collaboration extends StatefulWidget {
 class CollaborationWidget extends State<Collaboration> {
   OccurrenceService occurrenceService = OccurrenceService();
   List<Occurrence> occurrencies;
+  bool loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +39,31 @@ class CollaborationWidget extends State<Collaboration> {
               );
             case ConnectionState.done:
               return Scaffold(
-                appBar: AppBar(
-                  title: Text("Colaborações"),
-                ),
-                body: ListView.builder(
-                  itemCount: snapshot.data.length,
-                  itemBuilder: (context, index) {
-                    Occurrence occurrence = snapshot.data[index];
-                    return Column(
-                      children: <Widget>[card(context, occurrence)],
-                    );
-                  },
-                ),
-              );
+                  appBar: AppBar(
+                    title: Text("Colaborações"),
+                  ),
+                  body: snapshot.data.length == 0
+                      ? Center(
+                          child: Text(
+                            "Nenhuma ocorrência registrada.",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        )
+                      : LoadingOverlay(
+                          color: Colors.grey,
+                          child: ListView.builder(
+                            itemCount: snapshot.data.length,
+                            itemBuilder: (context, index) {
+                              Occurrence occurrence = snapshot.data[index];
+                              return Column(
+                                children: <Widget>[
+                                  CollaborationList(occurrence, context, this)
+                                ],
+                              );
+                            },
+                          ),
+                          isLoading: loading,
+                        ));
           }
           return null;
         });

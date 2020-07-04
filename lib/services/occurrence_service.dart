@@ -65,4 +65,15 @@ class OccurrenceService {
       print(error);
     }
   }
+
+  Future<void> delete(String id) async {
+    try {
+      await databaseReference
+          .collection(OCCURRENCE_COLLECTION)
+          .document(id)
+          .delete();
+    } catch (error) {
+      print(error);
+    }
+  }
 }

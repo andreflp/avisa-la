@@ -5,13 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:path/path.dart';
 import 'package:projeto_integ/components/dialogs.dart';
+import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/models/place.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:projeto_integ/services/occurrence_service.dart';
 import 'package:projeto_integ/utils/utils.dart';
+
+import 'occurrence_image.dart';
 
 class OccurrenceEditPage extends StatefulWidget {
   OccurrenceEditPage({Key key, this.occurrence}) : super(key: key);
@@ -42,6 +46,7 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
   double _lat;
   double _long;
   String _description = "";
+  bool _loading = false;
 
   @override
   void initState() {
@@ -65,31 +70,36 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
         appBar: AppBar(
           title: Text("Editar Ocorrência"),
         ),
-        body: Center(
-          child: Stack(children: <Widget>[
-            Container(
-                height: double.infinity,
-                child: FormBuilder(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 15.0,
-                      vertical: 55.0,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        _locationTextField(),
-                        _descriptionTextField(),
-                        _severityRadio(),
-                        _saveOccurrenceBtn(context)
-                      ],
-                    ),
-                  ),
-                )),
-          ]),
-        ));
+        body: LoadingOverlay(
+            color: Colors.grey,
+            child: Center(
+              child: Stack(children: <Widget>[
+                Container(
+                    height: double.infinity,
+                    child: FormBuilder(
+                      key: _formKey,
+                      child: SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 15.0,
+                          vertical: 55.0,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            _locationTextField(),
+//                            _imageTextField(context),
+                            _descriptionTextField(),
+                            _imageBtn(context),
+                            _severityRadio(),
+                            _saveOccurrenceBtn(context)
+                          ],
+                        ),
+                      ),
+                    )),
+              ]),
+            ),
+            isLoading: _loading));
   }
 
   Widget _locationTextField() {
@@ -118,6 +128,35 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
         });
       },
       onSaved: (value) => _location = value.trim(),
+    );
+  }
+
+  Widget _imageTextField(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          alignment: Alignment.centerLeft,
+          child: FormBuilderTextField(
+            readOnly: true,
+            controller: _imageController,
+            onTap: () {
+              Navigator.push(
+                context,
+                Transition(widget: OccurrenceImagePage(widget.occurrence)),
+              );
+            },
+            maxLines: 1,
+            keyboardType: TextInputType.emailAddress,
+            style: TextStyle(
+              color: Colors.black54,
+            ),
+            decoration: occurrenceFieldDecoration(
+                "Adicione uma imagem", Icons.fullscreen),
+            attribute: null,
+          ),
+        ),
+      ],
     );
   }
 
@@ -166,6 +205,29 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
         ),
       ),
     );
+  }
+
+  Widget _imageBtn(BuildContext context) {
+    return Container(
+        padding: EdgeInsets.only(bottom: 15.0),
+        width: double.infinity,
+        child: RaisedButton.icon(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+          icon: Icon(
+            Icons.fullscreen,
+            size: 18.0,
+          ),
+          textColor: Colors.white,
+          color: Colors.blue,
+          label: Text("Visualizar imagem"),
+          onPressed: () {
+            Navigator.push(
+              context,
+              Transition(widget: OccurrenceImagePage(widget.occurrence)),
+            );
+          },
+        ));
   }
 
   Widget _severityRadio() {
@@ -379,24 +441,36 @@ class _OccurrenceEditPageState extends State<OccurrenceEditPage> {
   }
 
   void updateOccurrence(BuildContext context) async {
-    await uploadImage();
-    await getLatLongByPlace(_placeId);
-
-    Occurrence model = Occurrence();
-    model.id = widget.occurrence.id;
-    model.location = _location;
-    model.lat = _lat;
-    model.long = _long;
-    model.imageURL = widget.occurrence.imageURL;
-    model.severity = _severity;
-    model.description = _description;
-
     try {
+      setState(() {
+        _loading = true;
+      });
+
+      await uploadImage();
+      await getLatLongByPlace(_placeId);
+
+      Occurrence model = Occurrence();
+      model.id = widget.occurrence.id;
+      model.location = _location;
+      model.lat = _lat;
+      model.long = _long;
+      model.imageURL = widget.occurrence.imageURL;
+      model.severity = _severity;
+      model.description = _description;
+      model.userId = widget.occurrence.userId;
+
       await occurrenceService.update(model);
       _formKey.currentState.reset();
 
       showSuccessDialog(context);
+
+      setState(() {
+        _loading = false;
+      });
     } catch (error) {
+      setState(() {
+        _loading = false;
+      });
       print(error);
     }
   }

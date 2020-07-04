@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/user.dart';
 import 'package:projeto_integ/pages/collaboration/collaboration.dart';
+import 'package:projeto_integ/pages/login/login.dart';
 import 'package:projeto_integ/pages/user.dart';
 import 'package:projeto_integ/services/auth.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class NavDrawer extends StatefulWidget {
   NavDrawer(this.auth, this.context);
@@ -65,8 +67,10 @@ class NavDrawerState extends State<NavDrawer> {
             accountName: Text(name),
             accountEmail: Text(email),
             currentAccountPicture: CircleAvatar(
-              backgroundImage: NetworkImage(photoURL),
-              child: photoURL.isEmpty
+              backgroundImage: photoURL != null
+                  ? NetworkImage(photoURL)
+                  : AssetImage("images/user-placeholder.png"),
+              child: photoURL != null && photoURL.isEmpty
                   ? Text(
                       firstChar,
                       style: TextStyle(fontSize: 40.0),
@@ -107,6 +111,7 @@ class NavDrawerState extends State<NavDrawer> {
   Future<void> _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacement(context, Transition(widget: Login()));
     } catch (e) {
       print(e);
     }
