@@ -158,7 +158,9 @@ class _UserPageState extends State<UserPage> {
           backgroundColor: Colors.blue,
           child: CircleAvatar(
             radius: 50,
-            backgroundImage: NetworkImage(_photoURL),
+            backgroundImage: _photoURL != null || _photoURL.isEmpty
+                ? NetworkImage(_photoURL)
+                : AssetImage("images/user-placeholder.png"),
           ),
         ),
       ),

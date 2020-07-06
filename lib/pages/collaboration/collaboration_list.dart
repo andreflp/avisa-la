@@ -6,17 +6,20 @@ import 'package:projeto_integ/components/dialogs.dart';
 import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
 import 'package:projeto_integ/pages/collaboration/collaboration.dart';
+import 'package:projeto_integ/pages/map/map.dart';
 import 'package:projeto_integ/pages/occurrence/occurrence_edit.dart';
 import 'package:projeto_integ/services/occurrence_service.dart';
 import 'package:transparent_image/transparent_image.dart';
 
 class CollaborationList extends StatelessWidget {
-  CollaborationList(this.occurrence, this.bc, this.collaboration);
+  CollaborationList(
+      this.occurrence, this.bc, this.collaboration, this.mapsState);
 
   final Occurrence occurrence;
   final CollaborationWidget collaboration;
   final BuildContext bc;
   final OccurrenceService occurrenceService = OccurrenceService();
+  final MapsState mapsState;
 
   @override
   Widget build(BuildContext context) {
@@ -154,6 +157,8 @@ class CollaborationList extends StatelessWidget {
     try {
       Navigator.of(context).pop();
       await occurrenceService.delete(id);
+
+      await this.mapsState.fetchOccurrences();
 
       showRemoveSuccessDialog(this.bc, id, this.collaboration);
     } catch (error) {

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
+import 'package:projeto_integ/pages/map/map.dart';
 import 'package:projeto_integ/services/occurrence_service.dart';
 
 import 'collaboration_list.dart';
 
 class Collaboration extends StatefulWidget {
-  Collaboration(this.userId);
+  Collaboration(this.userId, this.mapsState);
 
   final String userId;
+  final MapsState mapsState;
 
   @override
   State<StatefulWidget> createState() {
@@ -57,7 +59,8 @@ class CollaborationWidget extends State<Collaboration> {
                               Occurrence occurrence = snapshot.data[index];
                               return Column(
                                 children: <Widget>[
-                                  CollaborationList(occurrence, context, this)
+                                  CollaborationList(occurrence, context, this,
+                                      widget.mapsState)
                                 ],
                               );
                             },

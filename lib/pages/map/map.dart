@@ -9,10 +9,8 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:projeto_integ/components/sidebar.dart';
 import 'package:projeto_integ/components/transition.dart';
 import 'package:projeto_integ/models/occurrence_model.dart';
-import 'package:projeto_integ/pages/login/login.dart';
 import 'package:projeto_integ/pages/occurrence/occcurrence-infos.dart';
 import 'package:projeto_integ/pages/occurrence/occurrence.dart';
-import 'package:projeto_integ/pages/occurrence/occurrence_image.dart';
 import 'package:projeto_integ/services/auth.dart';
 import 'package:projeto_integ/services/occurrence_service.dart';
 import 'dart:ui' as ui;
@@ -45,11 +43,11 @@ class MapsState extends State<Maps> {
 
   @override
   void initState() {
-    super.initState();
     setCurrentLocationIcon();
     _futureCurrentPosition = _getCurrentPosition();
     _fetchOccurrencies = fetchOccurrences();
     SystemChrome.setEnabledSystemUIOverlays([]);
+    super.initState();
   }
 
   Future<GoogleMapController> _getCurrentPosition() async {
@@ -118,7 +116,7 @@ class MapsState extends State<Maps> {
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           key: _scaffoldKey,
-          drawer: NavDrawer(widget.auth, context),
+          drawer: NavDrawer(widget.auth, context, this),
           body: LoadingOverlay(
             color: Colors.grey,
             child: Stack(
@@ -216,6 +214,7 @@ class MapsState extends State<Maps> {
       loading = true;
     });
     List<Occurrence> occurrencies = await occurrenceService.fetchAll();
+    _markers = {};
 
     for (var i = 0; i < occurrencies.length; i++) {
       var occurrence = occurrencies[i];
