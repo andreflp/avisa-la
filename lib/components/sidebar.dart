@@ -84,11 +84,7 @@ class NavDrawerState extends State<NavDrawer> {
             title: Text('Meus Dados'),
             onTap: () => {
               Navigator.push(
-                  context,
-                  Transition(
-                      widget: UserPage(
-                    userID: userModel.id,
-                  )))
+                  context, Transition(widget: UserPage(userModel.id, this)))
             },
           ),
           ListTile(
@@ -116,52 +112,48 @@ class NavDrawerState extends State<NavDrawer> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
+            actions: <Widget>[
+              ButtonBar(
+                children: <Widget>[
+                  SizedBox(
+                      width: 100,
+                      child: RaisedButton.icon(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0)),
+                        icon: Icon(
+                          Icons.arrow_back,
+                          size: 15.0,
+                        ),
+                        textColor: Colors.white,
+                        color: Colors.blue,
+                        label: Text("Voltar"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      )),
+                  SizedBox(
+                      width: 100,
+                      child: RaisedButton.icon(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0)),
+                        icon: Icon(
+                          Icons.check,
+                          size: 15.0,
+                        ),
+                        textColor: Colors.white,
+                        color: Colors.green,
+                        label: Text("Sim"),
+                        onPressed: () async {
+                          Navigator.of(context).pop();
+                          _signOut();
+                        },
+                      )),
+                ],
+              ),
+            ],
             title: Text("Deseja realmente sair?"),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10.0))),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  ButtonBar(
-                    children: <Widget>[
-                      SizedBox(
-                          width: 100,
-                          child: RaisedButton.icon(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0)),
-                            icon: Icon(
-                              Icons.arrow_back,
-                              size: 15.0,
-                            ),
-                            textColor: Colors.white,
-                            color: Colors.blue,
-                            label: Text("Voltar"),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          )),
-                      SizedBox(
-                          width: 100,
-                          child: RaisedButton.icon(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0)),
-                            icon: Icon(
-                              Icons.check,
-                              size: 15.0,
-                            ),
-                            textColor: Colors.white,
-                            color: Colors.green,
-                            label: Text("Sim"),
-                            onPressed: () async {
-                              Navigator.of(context).pop();
-                              _signOut();
-                            },
-                          )),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           );
         });
   }
@@ -169,12 +161,13 @@ class NavDrawerState extends State<NavDrawer> {
   Future<void> _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
           context,
           Transition(
               widget: Login(
             auth: widget.auth,
-          )));
+          )),
+          (Route<dynamic> route) => false);
     } catch (e) {
       print(e);
     }

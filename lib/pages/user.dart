@@ -6,15 +6,16 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:path/path.dart';
-import 'package:projeto_integ/components/dialogs.dart';
+import 'package:projeto_integ/components/sidebar.dart';
 import 'package:projeto_integ/models/user.dart';
 import 'package:projeto_integ/services/user_service.dart';
 import 'package:projeto_integ/utils/utils.dart';
 
 class UserPage extends StatefulWidget {
-  UserPage({this.userID});
+  UserPage(this.userID, this.navDrawerState);
 
   final String userID;
+  final NavDrawerState navDrawerState;
 
   @override
   _UserPageState createState() => _UserPageState();
@@ -218,7 +219,9 @@ class _UserPageState extends State<UserPage> {
       await userService.update(model);
       _formKey.currentState.reset();
 
-      showSuccessDialog(context);
+      showSuccessDialog(context, "Salvo com sucesso!");
+
+      widget.navDrawerState.getCurrentUser();
 
       setState(() {
         _loading = false;
@@ -231,7 +234,8 @@ class _UserPageState extends State<UserPage> {
     }
   }
 
-  Widget cameraBtn(BuildContext context, String title, Function func) {
+  Widget cameraBtn(BuildContext context, BuildContext parentContext,
+      String title, Function func) {
     return SizedBox(
         width: double.infinity,
         child: RaisedButton.icon(
@@ -245,12 +249,13 @@ class _UserPageState extends State<UserPage> {
           color: Colors.blue,
           label: Text(title),
           onPressed: () {
-            func(context);
+            func(context, parentContext);
           },
         ));
   }
 
-  Future _openGallery(BuildContext context) async {
+  Future _openGallery(BuildContext context, BuildContext parentContext) async {
+    Navigator.of(context).pop();
     var picture = await ImagePicker().getImage(source: ImageSource.gallery);
 
     setState(() {
@@ -271,10 +276,11 @@ class _UserPageState extends State<UserPage> {
 
     await userService.update(model);
 
-    Navigator.of(context).pop();
+    showSuccessDialog(parentContext, "Foto alterada com sucesso!");
   }
 
-  Future _openCamera(BuildContext context) async {
+  Future _openCamera(BuildContext context, BuildContext parentContext) async {
+    Navigator.of(context).pop();
     var picture = await ImagePicker().getImage(source: ImageSource.camera);
 
     setState(() {
@@ -295,12 +301,12 @@ class _UserPageState extends State<UserPage> {
 
     await userService.update(model);
 
-    Navigator.of(context).pop();
+    showSuccessDialog(parentContext, "Foto alterada com sucesso!");
   }
 
-  Future<void> _showOptionsDialog(BuildContext context) {
+  Future<void> _showOptionsDialog(BuildContext bc) {
     return showDialog(
-        context: context,
+        context: bc,
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text("Escolha uma opção:"),
@@ -309,8 +315,8 @@ class _UserPageState extends State<UserPage> {
             content: SingleChildScrollView(
               child: ListBody(
                 children: <Widget>[
-                  cameraBtn(context, "Galeria", _openGallery),
-                  cameraBtn(context, "Câmera", _openCamera),
+                  cameraBtn(context, bc, "Galeria", _openGallery),
+                  cameraBtn(context, bc, "Câmera", _openCamera),
                 ],
               ),
             ),
@@ -323,14 +329,22 @@ class _UserPageState extends State<UserPage> {
     StorageReference firebaseStorageRef =
         FirebaseStorage.instance.ref().child(fileName);
     StorageUploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+    setState(() {
+      _loading = true;
+    });
     try {
       StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
       String dowurl = await taskSnapshot.ref.getDownloadURL();
+      widget.navDrawerState.getCurrentUser();
       setState(() {
         _photoURL = dowurl.toString();
+        _loading = false;
       });
       print("Upload feito com sucesso!");
     } catch (error) {
+      setState(() {
+        _loading = false;
+      });
       print("Erro ao fazer o upload: $error");
     }
   }
@@ -346,6 +360,45 @@ class _UserPageState extends State<UserPage> {
         _user.photoURL == null || _user.photoURL.isEmpty ? "" : _user.photoURL;
 
     return Future.value("Done");
+  }
+
+  Future showSuccessDialog(BuildContext context, String msg) {
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Center(
+              child: Text(
+                msg,
+                style: TextStyle(color: Colors.green),
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10.0))),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  SizedBox(
+                      width: double.infinity,
+                      child: RaisedButton.icon(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0)),
+                        icon: Icon(
+                          Icons.check,
+                          size: 18.0,
+                        ),
+                        textColor: Colors.white,
+                        color: Colors.green,
+                        label: Text(""),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ))
+                ],
+              ),
+            ),
+          );
+        });
   }
 
   void _showDialog(String msg) {

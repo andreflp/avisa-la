@@ -171,51 +171,47 @@ class CollaborationList extends StatelessWidget {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
+            actions: <Widget>[
+              ButtonBar(
+                children: <Widget>[
+                  SizedBox(
+                      width: 100,
+                      child: RaisedButton.icon(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0)),
+                        icon: Icon(
+                          Icons.arrow_back,
+                          size: 15.0,
+                        ),
+                        textColor: Colors.white,
+                        color: Colors.blue,
+                        label: Text("Voltar"),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      )),
+                  SizedBox(
+                      width: 100,
+                      child: RaisedButton.icon(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0)),
+                        icon: Icon(
+                          Icons.delete,
+                          size: 15.0,
+                        ),
+                        textColor: Colors.white,
+                        color: Colors.red,
+                        label: Text("Sim"),
+                        onPressed: () async {
+                          deleteOccurrence(context, occurrence.id);
+                        },
+                      )),
+                ],
+              ),
+            ],
             title: Text("Deseja remover esta ocorrência?"),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10.0))),
-            content: SingleChildScrollView(
-              child: ListBody(
-                children: <Widget>[
-                  ButtonBar(
-                    children: <Widget>[
-                      SizedBox(
-                          width: 100,
-                          child: RaisedButton.icon(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0)),
-                            icon: Icon(
-                              Icons.arrow_back,
-                              size: 15.0,
-                            ),
-                            textColor: Colors.white,
-                            color: Colors.blue,
-                            label: Text("Voltar"),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          )),
-                      SizedBox(
-                          width: 100,
-                          child: RaisedButton.icon(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0)),
-                            icon: Icon(
-                              Icons.delete,
-                              size: 15.0,
-                            ),
-                            textColor: Colors.white,
-                            color: Colors.red,
-                            label: Text("Sim"),
-                            onPressed: () async {
-                              deleteOccurrence(context, occurrence.id);
-                            },
-                          )),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           );
         });
   }
