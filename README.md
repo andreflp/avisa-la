@@ -1,8 +1,3 @@
 # Projeto Integrador
 
-Equipe: 
-- André Felipe
-- Rodolfo Szeremeta
-
-- Aplicativo para reportar eventos que ocorrem pelas cidades como acidentes, não conformidades de vias, zonas perigosas e desastres ambientais por exemplo.
-
+- App to report occurrences on cities like, accidents, dangerous zones and environmental disasters, using Flutter, Dart, Firebase and Google Maps tools.
